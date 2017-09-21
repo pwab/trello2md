@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# -*- coding: utf-8 -*-
 
 """ 
 Terminal program to convert Trello's json-exports to markdown.
@@ -136,7 +137,7 @@ def main():
 
     # load infile to 'data'
     try:
-        with open(args.inputfile, 'r') as inf:
+        with open(args.inputfile, 'r', encoding='utf8') as inf:
             data = json.load(inf)
     except IOError as e:
         sys.exit('I/O error({0}): {1}'.format(e.errno, e.strerror))
@@ -178,7 +179,7 @@ def main():
             outputfile += '.md'
 
     try:
-        with open(outputfile, 'w') as of:
+        with open(outputfile, 'w', encoding='utf8') as of:
             of.write(''.join(markdown))
 
         print('Sucessfully translated to "{0}"!'.format(outputfile))
