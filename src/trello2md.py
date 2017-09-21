@@ -3,7 +3,8 @@
 
 """ 
 Terminal program to convert Trello's json-exports to markdown.
-See: https://github.com/phipsgabler/trello2md
+Origin: https://github.com/phipsgabler/trello2md
+Fork: https://github.com/pwab/trello2md
 """
 
 import sys
@@ -32,9 +33,9 @@ def prepare_content(content):
         if match:
             line = '{0}[{1}]({1}){2}'.format(match.group(1), match.group(2), match.group(3))
            
-        # correct heading levels (add two)
+        # correct trello's heading levels (add two)
         if line.startswith('#') and line.endswith('#'):
-            result.append('##{0}##'.format(unlines(line)))
+            result.append('## {0}'.format(unlines(line)))
         else:
             result.append(line)
     
@@ -73,7 +74,7 @@ def print_card(card_id, data, comments, print_labels):
     comment_output = ''
     # comments are empty if they should not be printed
     if card_id in comments:
-        comment_output = '### Comments ###\n'
+        comment_output = '### Comments\n'
         comment_output += '\n\n'.join(comments[card_id])
 
     # format labels, if wanted
@@ -98,7 +99,7 @@ def print_card(card_id, data, comments, print_labels):
     attachments_string = '\n\n'.join(attachments) + '\n'
 
     # put it together
-    return '## {name} {lbls} ##\n{cntnt}\n{attms}\n{comments}\n'.format(
+    return '## {name} {lbls}\n{cntnt}\n{attms}\n{comments}\n'.format(
                                           name=unlines(card['name']),
                                           cntnt=content,
                                           attms=attachments_string,
@@ -114,16 +115,16 @@ def print_checklists(card_id, data):
     result = []
     for cl_id in card['idChecklists']:
         checklist = next(cl for cl in data['checklists'] if cl['id'] == cl_id)
-        items_string = '\n'.join('- ' + item['name'] for item in checklist['checkItems'])
-        result.append('### Checklist: {name} ###\n{items}'.format(name=checklist['name'],
-                                                                  items=items_string))
+        items_string = '\n'.join('- [ ] ' + item['name'] for item in checklist['checkItems'])
+        result.append('### Checklist: {name}\n{items}'.format(name=checklist['name'],
+                                                              items=items_string))
 
     result.append('\n\n')
     return '\n\n'.join(result)
 
 
 def main():
-    
+    """Main entry point for trello2md."""
     parser = argparse.ArgumentParser(description='Convert a JSON export from Trello to Markdown.')
     parser.add_argument('inputfile', help='The input JSON file')
     parser.add_argument('-i', '--header', help='Include header page', action='store_true')
@@ -151,14 +152,16 @@ def main():
         markdown.append('Number of lists: {0}  \n'.format(len(data['lists'])))
         markdown.append('Number of cards in lists: {0}  \n'.format(len(data['cards'])))
         markdown.append('Last change: {0}\n\n\n'.format(data['dateLastActivity']))
+
     comments = {}
     if args.comments:
         comments = prepare_all_comments(data)
+
     # process all lists in 'data', respecting closeness
     for lst in data['lists']:
         if not lst['closed'] or args.archived:
             # format list header
-            markdown.append('#{0}#\n\n'.format(unlines(lst['name'])))
+            markdown.append('# {0}\n\n'.format(unlines(lst['name'])))
 
             # process all cards in current list
             for card in data['cards']:
