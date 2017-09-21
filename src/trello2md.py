@@ -15,13 +15,13 @@ import re
 # a url in a line (obligatory starting with the protocol part)
 find_url = re.compile('(^|.* )([a-zA-Z]{3,4}://[^ ]*)(.*)$')
 
-################################################################################
+
 def unlines(line):
     """Remove all newlines from a string."""
 
     return line.translate(str.maketrans('\n', ' '))
 
-################################################################################
+
 def prepare_content(content):
     """Prepare nested markdown in content of a card."""
     
@@ -30,7 +30,7 @@ def prepare_content(content):
         # turn urls into actual links
         match = find_url.match(line)
         if match:
-           line = '{0}[{1}]({1}){2}'.format(match.group(1), match.group(2), match.group(3))
+            line = '{0}[{1}]({1}){2}'.format(match.group(1), match.group(2), match.group(3))
            
         # correct heading levels (add two)
         if line.startswith('#') and line.endswith('#'):
@@ -40,7 +40,7 @@ def prepare_content(content):
     
     return '\n'.join(result)
 
-################################################################################
+
 def prepare_all_comments(data):
     """Returns a dictionary for each card_id with a list of comments"""
     ret = {}
@@ -49,8 +49,8 @@ def prepare_all_comments(data):
         if action['type'] == 'commentCard':
             card_id = action['data']['card']['id']
             
-            if not card_id in ret:
-               ret[card_id] = []
+            if card_id not in ret:
+                ret[card_id] = []
                
             name = action['memberCreator']['fullName']
             date = action['date']
@@ -62,7 +62,7 @@ def prepare_all_comments(data):
             ret[card_id].append(comment_string)
     return ret
 
-################################################################################
+
 def print_card(card_id, data, comments, print_labels):
     """Print name, content, comments and attachments of a card."""
 
@@ -71,10 +71,10 @@ def print_card(card_id, data, comments, print_labels):
     content = prepare_content(card['desc']) + '\n'
 
     comment_output = ''
-    #comments are empty if they should not be printed
+    # comments are empty if they should not be printed
     if card_id in comments:
-       comment_output  = '### Comments ###\n'
-       comment_output += '\n\n'.join(comments[card_id])
+        comment_output = '### Comments ###\n'
+        comment_output += '\n\n'.join(comments[card_id])
 
     # format labels, if wanted
     labels = []
@@ -82,9 +82,9 @@ def print_card(card_id, data, comments, print_labels):
         labels.append('(')
 
         for n, label in enumerate(card['labels']):
-            separator = ', ' * bool(n) # only for n > 0
-            label_string = '{sep}_{lbl}_'.format(\
-              lbl=(label['name'] or label['color']), \
+            separator = ', ' * bool(n)  # only for n > 0
+            label_string = '{sep}_{lbl}_'.format(
+              lbl=(label['name'] or label['color']),
               sep=separator)
             labels.append(label_string)
 
@@ -98,14 +98,14 @@ def print_card(card_id, data, comments, print_labels):
     attachments_string = '\n\n'.join(attachments) + '\n'
 
     # put it together
-    return '## {name} {lbls} ##\n{cntnt}\n{attms}\n{comments}\n'.format( \
-                                          name=unlines(card['name']), \
-                                          cntnt=content, \
-                                          attms=attachments_string, \
-                                          comments=comment_output, \
+    return '## {name} {lbls} ##\n{cntnt}\n{attms}\n{comments}\n'.format(
+                                          name=unlines(card['name']),
+                                          cntnt=content,
+                                          attms=attachments_string,
+                                          comments=comment_output,
                                           lbls=labels_string)
 
-################################################################################
+
 def print_checklists(card_id, data):
     """Print a checklist as subsection with itemize."""
 
@@ -115,13 +115,13 @@ def print_checklists(card_id, data):
     for cl_id in card['idChecklists']:
         checklist = next(cl for cl in data['checklists'] if cl['id'] == cl_id)
         items_string = '\n'.join('- ' + item['name'] for item in checklist['checkItems'])
-        result.append('### Checklist: {name} ###\n{items}'.format(name=checklist['name'], \
-                                                     items=items_string))
+        result.append('### Checklist: {name} ###\n{items}'.format(name=checklist['name'],
+                                                                  items=items_string))
 
     result.append('\n\n')
     return '\n\n'.join(result)
 
-################################################################################
+
 def main():
     
     parser = argparse.ArgumentParser(description='Convert a JSON export from Trello to Markdown.')
@@ -141,7 +141,6 @@ def main():
             data = json.load(inf)
     except IOError as e:
         sys.exit('I/O error({0}): {1}'.format(e.errno, e.strerror))
-
     
     markdown = []
 
@@ -155,7 +154,7 @@ def main():
     comments = {}
     if args.comments:
         comments = prepare_all_comments(data)
-    # process all lists in 'data', respecting closedness
+    # process all lists in 'data', respecting closeness
     for lst in data['lists']:
         if not lst['closed'] or args.archived:
             # format list header
@@ -164,14 +163,14 @@ def main():
             # process all cards in current list
             for card in data['cards']:
                 if (not card['closed'] or args.archived) and (card['idList'] == lst['id']):
-                    markdown.append(print_card(card['id'], \
-                                               data, \
-                                               comments, \
+                    markdown.append(print_card(card['id'],
+                                               data,
+                                               comments,
                                                args.labels))
                     markdown.append(print_checklists(card['id'], data))
 
     # save result to file
-    if (args.output):
+    if args.output:
         outputfile = args.output
     else:
         outputfile = args.inputfile.replace('.json', '.md')
@@ -182,7 +181,7 @@ def main():
         with open(outputfile, 'w', encoding='utf8') as of:
             of.write(''.join(markdown))
 
-        print('Sucessfully translated to "{0}"!'.format(outputfile))
+        print('Successfully translated to "{0}"!'.format(outputfile))
 
         if args.card_links:
             print('Option --card-links is currently unimplemented and ignored.')
@@ -190,7 +189,6 @@ def main():
     except IOError as e:
         sys.exit('I/O error({0}): {1}'.format(e.errno, e.strerror))
 
-################################################################################
+
 if __name__ == '__main__':
     main()
-
