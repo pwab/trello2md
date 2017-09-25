@@ -13,7 +13,7 @@ import json
 import re
 
 
-# a url in a line (obligatory starting with the protocol part)
+# an url in a line (obligatory starting with the protocol part)
 find_url = re.compile('(^|.* )([a-zA-Z]{3,4}://[^ ]*)(.*)$')
 
 
@@ -34,8 +34,9 @@ def prepare_content(content):
             line = '{0}[{1}]({1}){2}'.format(match.group(1), match.group(2), match.group(3))
            
         # correct trello's heading levels (add two)
-        if line.startswith('#') and line.endswith('#'):
-            result.append('## {0}'.format(unlines(line)))
+        if line.startswith('#'):
+            # TODO: String to config -> '##{0}'
+            result.append('##{0}'.format(unlines(line)))
         else:
             result.append(line)
     
@@ -56,8 +57,10 @@ def prepare_all_comments(data):
             name = action['memberCreator']['fullName']
             date = action['date']
             content = prepare_content(action['data']['text'])
-            
-            comment_string = '- **{name}** ({date}):\n {content} \n'.format(
+
+            # TODO: Better markdown support in comments (e.g. linebreaks)
+            # TODO: String to config -> '- **{name}** ({date}):\n\t- {content} \n'
+            comment_string = '- **{name}**:\n```\n{content}\n```\n'.format(
                 name=name, date=date, content=content)
             
             ret[card_id].append(comment_string)
@@ -74,31 +77,39 @@ def print_card(card_id, data, comments, print_labels):
     comment_output = ''
     # comments are empty if they should not be printed
     if card_id in comments:
+        # TODO: String to config -> '### Comments\n'
         comment_output = '### Comments\n'
+        # TODO: String to config -> '\n\n'
         comment_output += '\n\n'.join(comments[card_id])
 
     # format labels, if wanted
     labels = []
     if print_labels and card['labels']:
+        # TODO: String to config -> '('
         labels.append('(')
 
         for n, label in enumerate(card['labels']):
+            # TODO: String to config -> ', '
             separator = ', ' * bool(n)  # only for n > 0
+            # TODO: String to config -> '{sep}_{lbl}_'
             label_string = '{sep}_{lbl}_'.format(
               lbl=(label['name'] or label['color']),
               sep=separator)
             labels.append(label_string)
 
+        # TODO: String to config -> ') '
         labels.append(') ')
         
     labels_string = ''.join(labels)
 
     # format attachments
     links = ((unlines(attm['name']), attm['url']) for attm in card['attachments'])
+    # TODO: String to config -> '[{0}]({1})'
     attachments = ('[{0}]({1})'.format(name, url) for name, url in links)
     attachments_string = '\n\n'.join(attachments) + '\n'
 
     # put it together
+    # TODO: String to config -> '## {name} {lbls}\n{cntnt}\n{attms}\n{comments}\n'
     return '## {name} {lbls}\n{cntnt}\n{attms}\n{comments}\n'.format(
                                           name=unlines(card['name']),
                                           cntnt=content,
@@ -116,8 +127,9 @@ def print_checklists(card_id, data):
     for cl_id in card['idChecklists']:
         checklist = next(cl for cl in data['checklists'] if cl['id'] == cl_id)
         items_string = '\n'.join('- [ ] ' + item['name'] for item in checklist['checkItems'])
-        result.append('### Checklist: {name}\n{items}'.format(name=checklist['name'],
-                                                              items=items_string))
+        # TODO: String to config -> '### Checklist: {name}\n\n{items}'
+        result.append('### {name}\n\n{items}'.format(name=checklist['name'],
+                                                     items=items_string))
 
     result.append('\n\n')
     return '\n\n'.join(result)
@@ -161,6 +173,7 @@ def main():
     for lst in data['lists']:
         if not lst['closed'] or args.archived:
             # format list header
+            # TODO: String to config -> '# {0}\n\n'
             markdown.append('# {0}\n\n'.format(unlines(lst['name'])))
 
             # process all cards in current list
