@@ -59,8 +59,8 @@ def prepare_all_comments(data):
             content = prepare_content(action['data']['text'])
 
             # TODO: Better markdown support in comments (e.g. linebreaks)
-            # TODO: String to config -> '- **{name}** ({date}):\n\t- {content} \n'
-            comment_string = '- **{name}**:\n```\n{content}\n```\n'.format(
+            # TODO: String to config -> '**{name}** ({date}):\n{content} \n'
+            comment_string = '**{name}**:\n\n{content}\n'.format(
                 name=name, date=date, content=content)
             
             ret[card_id].append(comment_string)
